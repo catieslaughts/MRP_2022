@@ -537,14 +537,15 @@ if __name__ == '__main__':
 
     for e in np.linspace(0, 0.99, 5, endpoint=True):
         (E, v) = kepler_solve(e, Mtrial)
-        kep.plot(E, Mtrial)
+        kep.plot(E, Mtrial)#, label = str(e))
 
+    #plt.legend()
     plt.xlabel('E')
     plt.ylabel('M(E)')
     plt.title('Keplers Equation')
     plt.axis([0, 3 *np.pi, 0, 3 * np.pi])
 
-    # plot orbit of gamma and
+    # plot orbit of gamma andromeda
     P = 61.1 * u.year
     t = 1952.1 * u.year
     a = 0.296 * u.au
