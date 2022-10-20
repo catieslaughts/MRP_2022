@@ -253,10 +253,12 @@ def kep3d(epoch:u.year, P:u.year, tperi:u.year, a, e, inc:u.deg, omega:u.deg, an
     # problem with building the np.array below and putting the Quantity through
     # the np.dot() routine
     
-    (Xe, Ye, Ze)    = np.dot(mat, np.array([X.value,Y.value,0]))
+    (Xe, Ye, Ze)    = np.dot(mat, np.array([X.value,Y.value,0],dtype=object))
     #blog = np.array([X,Y,np.zeros(X.size)]) * X.unit
     #(Xe, Ye, Ze)    = np.dot(mat, blog)
-    (Xev, Yev, Zev) = np.dot(mat, np.array([Xv.value,Yv.value,0]))
+    (Xev, Yev, Zev) = np.dot(mat, np.array([Xv.value,Yv.value,0],dtype=object))
+    
+    ##CATHERINE added dtype=object to these two lines to avoid the depreciation warning
 
     Xs = -Ye * X.unit
     Ys =  Xe * X.unit
