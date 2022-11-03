@@ -10,7 +10,7 @@ from mpl_toolkits.mplot3d import Axes3D
 
 
 ##Data handling:
-def save_kep3d(X, Y, Xs, Ys, Zs, Xv, Yv, Zv, overwrite = False, filepath = './data/', filename = 'data.csv'):
+def save_kep3d(X, Y, Xs, Ys, Zs, Xv, Yv, Zv, overwrite = False, filepath = './earthsuntest/', filename = 'data.csv'):
 	'''saves the outputs of kep3d into a basic csv with one line header, added by Catherine Oct 12, 2022
 	
 	Args:
@@ -87,7 +87,9 @@ def animate_2d(directory = './data/', save = False):
 	Xs = [] #setting up orbit data, using regular lists because they append more nicely for our purposes
 	Ys = []
 	
-	for filename in os.listdir(directory):
+	files = os.listdir(directory)
+	files.reverse()
+	for filename in files:
 		#print (filename)
 		if not filename.startswith('.'):
 			Xs_temp, Ys_temp = read_kep3d(directory, filename)[2:4] #reads in relevant columns
@@ -98,13 +100,14 @@ def animate_2d(directory = './data/', save = False):
 	Xs = np.asarray(Xs)#convert regular lists to np arrays
 	Ys = np.asarray(Ys)
 	
-	print(Ys.shape)
+	#print(Ys.shape)
 	
 	fig, ax = plt.subplots()#set up figure
 	
 	ax.axis('equal')
-	ax.set_xlim((-0.05,0.075)) #axis shape
-	ax.set_ylim((-0.025, 0.20))
+	offset = .1
+	ax.set_xlim((Xs.min()-offset,Xs.max()+offset)) #axis shape
+	ax.set_ylim((Ys.min()-offset, Ys.max()+offset))
 	
 	ax.set_xlabel('X')
 	ax.set_ylabel('Y')
@@ -112,7 +115,10 @@ def animate_2d(directory = './data/', save = False):
 	
 	##"background" imagery
 	ax.scatter(0., 0., marker='o', color='grey') #primary
-	ax.plot(Xs[0],Ys[0], linestyle='--', color = 'darkgrey') #if you want a reference orbit, that can be plotted
+	
+	for i in range(Xs.shape[0]):
+		ax.plot(Xs[i],Ys[i], linestyle='--', alpha=.5) #if you want a reference orbit, that can be plotted
+	ax.set_prop_cycle(None)
 	
 	points = np.ndarray(Xs.shape[0], dtype=object) #arbitrary length based on # of filenames
 	
@@ -159,7 +165,10 @@ def animate_3d(directory = './data/', save = False):
 	Xs = [] #setting up orbit data, using regular lists because they append more nicely for our purposes
 	Ys = []
 	Zs = []
-	for filename in os.listdir(directory):
+	
+	files = os.listdir(directory)
+	files.reverse()
+	for filename in files:
 		if not filename.startswith('.'):
 	
 			Xs_temp, Ys_temp, Zs_temp = read_kep3d(directory, filename)[2:5] #reads in relevant columns
@@ -174,11 +183,10 @@ def animate_3d(directory = './data/', save = False):
 	
 	fig, ax = plt.subplots(figsize=(8,7),subplot_kw={'projection': '3d'})#set up figure
 	
-	h = 0.2
-	#ax.axis('equal')
-	ax.set_xlim(-h,h)
-	ax.set_ylim(-h,h)
-	ax.set_zlim(h,-h)
+	offset = .1
+	ax.set_xlim((Xs.min()-offset,Xs.max()+offset)) #axis shape
+	ax.set_ylim((Ys.min()-offset, Ys.max()+offset))
+	ax.set_zlim((Zs.min()-offset, Zs.max()+offset))
 	
 	ax.set_xlabel('X')
 	ax.set_ylabel('Y')
@@ -186,7 +194,9 @@ def animate_3d(directory = './data/', save = False):
 	ax.set_title('Title')
 	
 	ax.scatter(0., 0., 0., marker='o', color='grey') #primary
-	ax.plot(Xs[0],Ys[0],Zs[0], linestyle='--', color = 'darkgrey') #if you want a reference orbit, that can be plotted
+	for i in range(Xs.shape[0]):
+		ax.plot(Xs[i],Ys[i], Zs[i], linestyle='--', alpha=.5) #if you want a reference orbit, that can be plotted
+	ax.set_prop_cycle(None) #resets color cycler so orbits match up with particles
 	
 	points = np.ndarray(Xs.shape[0], dtype=object) #arbitrary length based on # of filenames
 	
