@@ -3,7 +3,7 @@ import astropy.units as u
 import astropy.constants as c
 
 @u.quantity_input
-def kick_kep_elements(delta_v:u.m/u.s, theta_i, phi_i, curr_epoch:u.year, P:u.year, tperi_i:u.year, a_i:u.m, e_i, inc_i:u.deg, omega_bar_i:u.deg, anode_i:u.deg, M:u.kg, m:u.kg):
+def kick_kep_elements(delta_v:u.m/u.s, theta_i:u.rad, phi_i:u.rad, P:u.year, f_i:u.rad, a_i:u.m, e_i, inc_i:u.deg, omega_bar_i:u.deg, anode_i:u.deg, M:u.kg, m:u.kg):
 	'''
 	calculates the resulting orbital elements of a secondary given a velocity impulse is applied. 
 	Adapted from section 2 and appendix A of Jackson et al. 2014
@@ -11,7 +11,6 @@ def kick_kep_elements(delta_v:u.m/u.s, theta_i, phi_i, curr_epoch:u.year, P:u.ye
 	Args:
         delta_v (float): magnitude of velocity kick
         theta_i, phi_i: theta and phi angles of velocity kick relative to the original orbit location IN RADIANS
-        curr_epoch (float):  the time at which the explosion occurs, should just be the first in the list of epochs to evaluate
         P (np.array): orbital period (u.time)  
         tperi_i (float): initial epoch of periastron (u.time)
         a_i (float): semi-major axis of the initial orbit (u.distance)
@@ -32,8 +31,6 @@ def kick_kep_elements(delta_v:u.m/u.s, theta_i, phi_i, curr_epoch:u.year, P:u.ye
 	'''
 	
 	#convert necessary values:
-	f_i = tperi_to_f(tperi_i, curr_epoch, P, e_i)
-	
 	omega_i = omega_bar_i - anode_i #source: https://en.wikipedia.org/wiki/Longitude_of_the_periapsis
 	
 	theta1 = theta_i #redundancy in case I need to change the defs. of theta and phi
@@ -71,10 +68,10 @@ def kick_kep_elements(delta_v:u.m/u.s, theta_i, phi_i, curr_epoch:u.year, P:u.ye
 	Canode = np.cos(anode_i)
 	
 	#calculate theta and phi
-	theta = np.arccos(Ct1*Ci - St1*Si*Sbeta) #Eqs A1
-	phi = (St1*(Sbeta*Ci*Comega - Cbeta*Somega) + Ct1*Si*Comega) / (St1*(Sbeta*Ci*Somega + Cbeta*Comega) + Ct1*Si*Somega)
-	
-	#print('THETA: '+str(theta))
+	theta = theta_i
+	phi = phi_i
+# 	theta = np.arccos(Ct1*Ci - St1*Si*Sbeta)#Eqs A1
+# 	phi = np.arctan2((St1*(Sbeta*Ci*Comega - Cbeta*Somega) + Ct1*Si*Comega), (St1*(Sbeta*Ci*Somega + Cbeta*Comega) + Ct1*Si*Somega))
 	
 	#theta and phi trig
 	St = np.sin(theta)
@@ -83,6 +80,7 @@ def kick_kep_elements(delta_v:u.m/u.s, theta_i, phi_i, curr_epoch:u.year, P:u.ye
 	Cp = np.cos(phi)
 	
 	Spf = np.sin(phi - f_i)
+	Cpf = np.cos(phi - f_i)
 	
 	#Other useful values
 	vk = np.sqrt(c.G *(M+m)/a_i) #this line is why a needs to be given as unit of linear distance
@@ -95,74 +93,81 @@ def kick_kep_elements(delta_v:u.m/u.s, theta_i, phi_i, curr_epoch:u.year, P:u.ye
 	
 	vel_prime = vel_i + delta_v_vec #velocities are additive
 	
-	h_i_vec = np.cross(R_vec, vel_i) #used two eqs here to test math was working out right, it is
+#	h_i_vec = np.cross(R_vec, vel_i) #used two eqs here to test math was working out right, it is
 	h_i = a_i*vk*(1-e_i**2)**.5
 	
 	h_prime_vec = np.cross(R_vec, vel_prime)
 	h_prime = np.linalg.norm(h_prime_vec)
 	
-	#eq 4:
+	factor = ((1-e_i**2)**.5/(1+e_i*Cf))*(delta_v/vk)
+	
+	h_frac_sq = 1 + 2 * factor * St*Spf + factor**2 * (Ct**2 + (St**2)*(Spf**2))#h'^2 / h^2, eq 8 
+	
+	#eq 4: calculates a
 	frac = 1 - (delta_v/vk)**2 - (2/(np.sqrt(1-e_i**2)))*(delta_v/vk)*St*(Spf + e_i*Sp) #a/a'
+	#print(P*frac)
 	
 	a_prime = a_i / frac
 	
 	#Using Kepler 3 to recalculate the period:
 	P_prime = P*frac**(-3/2)
 	
-	#eq 6:
-	e_prime = np.sqrt(1 - ((1 - e_i**2)*((h_prime/h_i)**2)*(a_i/a_prime)))
+	#eq 6: calculates e
+	e_prime = np.sqrt(1 - ((1 - e_i**2)*h_frac_sq*(a_i/a_prime)))
 	
-	#eq A2:
-	factor = (np.sqrt(1 - e_i**2)/(1+e_i*Cf))*(delta_v/vk) #defined by me b/c it's used several times
-	inc_prime = np.arccos((Ci + factor*St1*(Calpha*Sbeta - Salpha*Cbeta*Ci))*(h_prime**2/h_i**2)**-.5)
+	#eq A2: calculates inc 
+# 	inc_prime = np.arccos((Ci + factor*St1*(Calpha*Sbeta - Salpha*Cbeta*Ci))*(h_frac_sq)**-.5)
 	
-	#eq A3:
+# 	#eq 10: calculates inc
+	inc_prime = np.arccos((1 + factor*St*Spf) * h_frac_sq**-.5)
+	
+	#if theta
+	
+	#eq A3: calculates anode
 	top = Sanode*Si + factor* (Ct1*(Sanode*Calpha + Canode*Salpha*Ci) - St1*Cp1*Si*Salpha)
-	bottom = Canode*Si + factor* (Ct1*(Sanode*Calpha - Canode*Salpha*Ci) - St1*Cp1*Si*Salpha)
+	bottom = Canode*Si + factor* (Ct1*(Canode*Calpha - Sanode*Salpha*Ci) - St1*Cp1*Si*Salpha)
 	
-	anode_prime = np.arctan(top/bottom)
+# 	print(top)
+# 	print(bottom)
 	
-	#eq 13:
-	inner = (1/e_prime)*(((h_prime**2/h_i**2)*(1+e_i*Cf))-1)
+	anode_prime = np.arctan2(top,bottom)
 	
-	if inner < -1: #a rounding error occurs at multiples of pi when delta_v = 0, it's a rare case
-		inner = -1 * inner.unit
-	if inner > 1:
-		inner = 1 * inner.unit
+# 	print(anode_prime)
 	
-	f_prime = np.arccos(inner)
-	
-	#eq A4
-	omega_prime = np.arcsin(Salpha*Si/np.sin(inc_prime)) - f_prime
-	
-	#convert back to tperi:
-	tperi_prime = f_to_tperi(f_prime, e_prime, P_prime, curr_epoch)
-	
-	#tperi_prime = f_prime
-	
-	return P_prime, tperi_prime, a_prime, e_prime, inc_prime, omega_prime, anode_prime
-	
-	
-def tperi_to_f(tperi, t, per, e):
-	ma = ((2*np.pi/per) * (t-tperi)).value #mean anomaly, from Murray and Dermott
-	
-	f = ma + (2*e-.25*e**3)*np.sin(ma) + (5/4)*(e**2)*np.sin(2*ma) + (13/12)*(e**3)*np.sin(3*ma)#from https://en.wikipedia.org/wiki/True_anomaly#From_the_mean_anomaly
-	
-	return f
+	#eq 11: calcuates anode
+# 	if theta.value <= np.pi/2:
+# 		anode_prime = f_i
+# 	else:
+# 		anode_prime = f_i + np.pi * u.rad
 
-def f_to_tperi(f, e, P, t):
+	#anode_prime = f_i + np.pi * u.rad
 	
-	f=f.value
+	#eq 13: calculates f
+	cosf = (1/e_prime)*((h_frac_sq*(1+e_i*Cf))-1)
+	sinf = (1/e_prime)*(h_frac_sq**.5)*(e_i*Sf + (1-e_i**2)**.5 * (delta_v/vk)*St*Cpf)
+	f_prime = np.arctan2(sinf, cosf)
+
+	#eq A4: calculates omega
+	if inc_prime == 0:
+		print('Warning: inc_prime == 0 creates a divide by zero error when calculating omega, setting inc_prime = 1e-5')
+		inc_prime = 1e-5 * inc_prime.unit
 	
-	first = -np.sqrt(1-e**2)*np.sin(f)
-	second = -e - np.cos(f)
+	top = Salpha*Si/np.sin(inc_prime)
+	bottom = (1/np.cos(anode_prime)) * (Canode*Calpha - Sanode*Salpha*Ci + np.sin(anode_prime)*Salpha*(Si*np.cos(inc_prime)/np.sin(inc_prime)))
+	omega_prime = np.arctan2(top,bottom) - f_prime
 	
-	#print()
+	#eq 12: calculates omega:
+# 	if theta.value <= np.pi/2:
+# 		omega_prime = -f_prime
+# 	else:
+# 		omega_prime = np.pi*u.rad - f_prime
+		
+	omega_bar_prime = anode_prime + omega_prime
 	
-	ma = np.arctan2(first, second).value + np.pi - e*(-first/(1+e*np.cos(f))) #https://en.wikipedia.org/wiki/Mean_anomaly
+# 	anode_prime -= (np.pi)*u.rad
+			
 	
-	tperi = t - (ma*P/(2*np.pi)) #inverse of Murray and Dermott
+	return P_prime, f_prime, a_prime, e_prime, inc_prime, omega_bar_prime, anode_prime
 	
 	
-	return tperi
 	

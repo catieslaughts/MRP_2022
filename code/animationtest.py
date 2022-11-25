@@ -1,5 +1,5 @@
 from kepler3 import *
-from kepler3_helperfunctions import *
+from kepler3_addon import *
 
 #setup pulled from test code in kepler3:
 
