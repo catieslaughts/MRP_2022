@@ -31,15 +31,16 @@ def kick_kep_elements(delta_v:u.m/u.s, theta_i:u.rad, phi_i:u.rad, P:u.year, f_i
 	'''
 	
 	#convert necessary values:
-	omega_i = omega_bar_i - anode_i #source: https://en.wikipedia.org/wiki/Longitude_of_the_periapsis
+	omega_i = omega_bar_i #- anode_i #source: https://en.wikipedia.org/wiki/Longitude_of_the_periapsis
 	
 	theta1 = theta_i #redundancy in case I need to change the defs. of theta and phi
 	phi1 = phi_i
 	
+	print(omega_i)
 	
-	omega_i = omega_i.to_value(u.rad)
-	inc_i = inc_i.to_value(u.rad)
-	anode_i = anode_i.to_value(u.rad)
+# 	omega_i = omega_i.to_value(u.rad)
+# 	inc_i = inc_i.to_value(u.rad)
+# 	anode_i = anode_i.to_value(u.rad)
 	
 	#paper-defined values:
 	
@@ -50,6 +51,9 @@ def kick_kep_elements(delta_v:u.m/u.s, theta_i:u.rad, phi_i:u.rad, P:u.year, f_i
 	Sp1 = np.sin(phi1)
 	
 	#alpha and beta plus trig
+	print(omega_i)
+	print(f_i)
+	
 	alpha = omega_i + f_i
 	beta = phi1 - anode_i
 	Cbeta = np.cos(beta)
@@ -68,10 +72,10 @@ def kick_kep_elements(delta_v:u.m/u.s, theta_i:u.rad, phi_i:u.rad, P:u.year, f_i
 	Canode = np.cos(anode_i)
 	
 	#calculate theta and phi
-	theta = theta_i
-	phi = phi_i
-# 	theta = np.arccos(Ct1*Ci - St1*Si*Sbeta)#Eqs A1
-# 	phi = np.arctan2((St1*(Sbeta*Ci*Comega - Cbeta*Somega) + Ct1*Si*Comega), (St1*(Sbeta*Ci*Somega + Cbeta*Comega) + Ct1*Si*Somega))
+# 	theta = theta_i
+# 	phi = phi_i
+	theta = np.arccos(Ct1*Ci - St1*Si*Sbeta)#Eqs A1
+	phi = np.arctan2((St1*(Sbeta*Ci*Comega - Cbeta*Somega) + Ct1*Si*Comega), (St1*(Sbeta*Ci*Somega + Cbeta*Comega) + Ct1*Si*Somega))
 	
 	#theta and phi trig
 	St = np.sin(theta)
@@ -116,10 +120,10 @@ def kick_kep_elements(delta_v:u.m/u.s, theta_i:u.rad, phi_i:u.rad, P:u.year, f_i
 	e_prime = np.sqrt(1 - ((1 - e_i**2)*h_frac_sq*(a_i/a_prime)))
 	
 	#eq A2: calculates inc 
-# 	inc_prime = np.arccos((Ci + factor*St1*(Calpha*Sbeta - Salpha*Cbeta*Ci))*(h_frac_sq)**-.5)
+	inc_prime = np.arccos((Ci + factor*St1*(Calpha*Sbeta - Salpha*Cbeta*Ci))*(h_frac_sq)**-.5)
 	
 # 	#eq 10: calculates inc
-	inc_prime = np.arccos((1 + factor*St*Spf) * h_frac_sq**-.5)
+# 	inc_prime = np.arccos((1 + factor*St*Spf) * h_frac_sq**-.5)
 	
 	#if theta
 	
@@ -142,10 +146,13 @@ def kick_kep_elements(delta_v:u.m/u.s, theta_i:u.rad, phi_i:u.rad, P:u.year, f_i
 
 	#anode_prime = f_i + np.pi * u.rad
 	
-	#eq 13: calculates f
+	#eq 14: calculates f
 	cosf = (1/e_prime)*((h_frac_sq*(1+e_i*Cf))-1)
 	sinf = (1/e_prime)*(h_frac_sq**.5)*(e_i*Sf + (1-e_i**2)**.5 * (delta_v/vk)*St*Cpf)
 	f_prime = np.arctan2(sinf, cosf)
+	
+	if f_prime < 0.0:
+		f_prime = f_prime + 2*np.pi
 
 	#eq A4: calculates omega
 	if inc_prime == 0:
@@ -162,7 +169,7 @@ def kick_kep_elements(delta_v:u.m/u.s, theta_i:u.rad, phi_i:u.rad, P:u.year, f_i
 # 	else:
 # 		omega_prime = np.pi*u.rad - f_prime
 		
-	omega_bar_prime = anode_prime + omega_prime
+	omega_bar_prime =  omega_prime #+anode_prime
 	
 # 	anode_prime -= (np.pi)*u.rad
 			
