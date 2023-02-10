@@ -329,6 +329,20 @@ def tperi_to_Tanom(tperi, epoch, P, e, derror=1e-6):
     #print(v)
     
     return E, v.value
+    
+def Tanom_to_tperi(f, e, P):
+	#calc E
+	top = np.tan(f/2) * np.sqrt(1-e)
+	bottom = np.sqrt(1+e)
+	E = 2*np.arctan2(top, bottom) #new-orbital.pdf pg 6
+	
+	#calc M
+	M = E.value - e*np.sin(E) #kepler's equation
+	
+	#calc tperi:
+	tperi = -M*P/(2*np.pi)
+	
+	return tperi
 
 ##Data handling:
 def save_kep3d(X, Y, Xs, Ys, Zs, Xv, Yv, Zv, overwrite = False, filepath = './earthsuntest/', filename = 'data.csv'):

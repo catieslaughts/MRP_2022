@@ -12,7 +12,7 @@ def kick_kep_elements(delta_v:u.m/u.s, theta_i:u.rad, phi_i:u.rad, P:u.year, f_i
         delta_v (float): magnitude of velocity kick
         theta_i, phi_i: theta and phi angles of velocity kick relative to the original orbit location IN RADIANS
         P (np.array): orbital period (u.time)  
-        tperi_i (float): initial epoch of periastron (u.time)
+        f_i (float): initial true anomaly (u.angle)
         a_i (float): semi-major axis of the initial orbit (u.distance)
         e_i (float): eccentricity of the initial orbit
         inc_i (float): inclination of the initial orbit  (u.angle)
@@ -22,7 +22,7 @@ def kick_kep_elements(delta_v:u.m/u.s, theta_i:u.rad, phi_i:u.rad, P:u.year, f_i
         m : mass of the secondary
 
     Returns:
-        tperi_prime (float): resulting epoch of periastron (u.time)
+        f_prime (float): resulting epoch of periastron (u.time)
         a_prime (float): semi-major axis of the resulting orbit
         e_prime (float): eccentricity of the resulting orbit
         inc_prime (float): inclination of the resulting orbit  (u.angle)
@@ -36,7 +36,7 @@ def kick_kep_elements(delta_v:u.m/u.s, theta_i:u.rad, phi_i:u.rad, P:u.year, f_i
 	theta1 = theta_i #redundancy in case I need to change the defs. of theta and phi
 	phi1 = phi_i
 	
-	print(omega_i)
+	#print(omega_i)
 	
 # 	omega_i = omega_i.to_value(u.rad)
 # 	inc_i = inc_i.to_value(u.rad)
@@ -51,8 +51,8 @@ def kick_kep_elements(delta_v:u.m/u.s, theta_i:u.rad, phi_i:u.rad, P:u.year, f_i
 	Sp1 = np.sin(phi1)
 	
 	#alpha and beta plus trig
-	print(omega_i)
-	print(f_i)
+	#print(omega_i)
+	#print(f_i)
 	
 	alpha = omega_i + f_i
 	beta = phi1 - anode_i
