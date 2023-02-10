@@ -324,11 +324,11 @@ def tperi_to_Tanom(tperi, epoch, P, e, derror=1e-6):
     Mt = Y / P
     M  = (2 * np.pi * (Mt - np.floor(Mt)))*u.radian
     
-    (E,v) = kepler_solve(e, M, derror)
+    (E,v) = kepler_solve(e, M, derror) #returned in rad units
     
-    #print(v)
+    #print(E)
     
-    return E, v.value
+    return E, v 
     
 def Tanom_to_tperi(f, e, P):
 	#calc E
@@ -337,10 +337,11 @@ def Tanom_to_tperi(f, e, P):
 	E = 2*np.arctan2(top, bottom) #new-orbital.pdf pg 6
 	
 	#calc M
-	M = E.value - e*np.sin(E) #kepler's equation
+	M = E - e*np.sin(E)*u.rad #kepler's equation
 	
 	#calc tperi:
-	tperi = -M*P/(2*np.pi)
+	tperi = -M*P/(2*np.pi*u.rad)
+	print(tperi)
 	
 	return tperi
 

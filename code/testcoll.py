@@ -6,7 +6,7 @@ from kepler3 import *
 #setup pulled from test code in kepler3:
 
 P     = 1 * u.year # years
-tperi = 0.7 * u.year
+tperi = 0. * u.year
 a     = 1 *u.AU#linear distance
 e     = 0.8
 inc   = 23.4406 * u.deg #23.4406
@@ -18,12 +18,12 @@ num_steps = 300
 t_max = (P * 1.5)
 t_orbit = np.linspace(0,0+t_max.value,num_steps) * u.year
 
-E, f = tperi_to_Tanom(tperi, t_orbit, P, e)*u.rad
-# print()
+E, f = tperi_to_Tanom(tperi, t_orbit, P, e) #units of radians
+#print(f)
 
-delta_v = .00000001*u.km/u.s
-theta_i = 2*np.pi/4*u.rad
-phi_i =  0*np.pi*u.rad
+delta_v = 10*u.km/u.s
+theta_i = 0*np.pi*u.rad
+phi_i =  (.5)*np.pi*u.rad
 
 M = c.M_sun
 m = c.M_earth
