@@ -12,3 +12,7 @@ src/tex/figures/*
 
 # Miscellaneous
 __pycache__
+
+#added by me
+./code/data
+./code/test_subset
