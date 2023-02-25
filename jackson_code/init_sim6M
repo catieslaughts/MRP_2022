@@ -1,0 +1,79 @@
+#! /bin/bash
+
+PROG=$1      #program to use to generate particles, generally expgenXXX
+NPROC=0      #number of processes to spawn
+NSTART=1     #modifier to start of process numbering
+NPART=0      #number of particles to use per processor
+MASS=0       #total mass of debris
+NICEL=10     #Nice level
+
+OPTIND=2     #to account for non-getopt program option
+
+while getopts ":p:n:m:s:i:" opt; do
+    case $opt in
+#       e)
+#           PROG=$OPTARG
+#           ;;
+        p)
+            NPROC=$OPTARG
+            ;;
+        n)
+            NPART=$OPTARG
+            ;;
+        m)
+            MASS=$OPTARG
+            ;;
+        s)
+            NSTART=$OPTARG
+            ;;
+        i)
+            NICEL=$OPTARG
+            ;;
+        \?)
+            echo "Invalid option: -$OPTARG"
+            exit 1
+            ;;
+        :)
+            echo "Option -$OPTARG requires an argument."
+            exit 1
+            ;;
+    esac
+done
+
+if [[ $NPROC == 0 ]]; then
+    echo "Number of processors required"
+    exit 1
+fi
+
+if [[ $NSTART != 1 ]]; then
+    echo "First process will be no. $NSTART"
+fi
+
+if [[ $NPART == 0 ]]; then
+    echo "Number of particles per processor required"
+    exit 1
+fi
+
+echo "Initialising simulation using $PROG on $NPROC processors"
+if [[ $MASS != "0" ]]; then
+    echo "using $NPART particles per processor and $MASS kg of debris"
+else echo "using $NPART particles per processor and massless debris"
+fi
+
+DEBMASS=`echo $MASS $NPROC $NPART | awk '{print $1/($2*$3)}'`
+
+echo "$DEBMASS kg per debris particle"
+
+DATA="merfiles"
+DIR="p"
+
+for (( N=($NSTART); N<$(($NPROC+$NSTART)) ; N++ )); do
+    export GSL_RNG_SEED=$RANDOM
+    echo $DIR$N
+    mkdir $DIR$N; cp $DATA/* $DIR$N; cd $DIR$N
+    ./$PROG -p $N -n $NPART -m $DEBMASS
+    nice -n +$NICEL ./mercury6 &
+    cd ..
+done
+
+exit 0
