@@ -208,5 +208,5 @@ def animate_3d(directory = './data/', save = False, save_file = './3Danimation.g
 	if save:
 		ani.save(save_file)
 
-animate_3d(directory = './test_subset/', save=True)
+#animate_3d(save=True)
 
