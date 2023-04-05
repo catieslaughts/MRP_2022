@@ -14,6 +14,7 @@ src/tex/figures/*
 __pycache__
 
 #added by me
-./code/data
-./code/50000_data
-./code/test_subset
+**/code/data**
+**/code/50000_data**
+**/code/test_subset**
+**.csv
