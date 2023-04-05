@@ -5,7 +5,7 @@ import os.path as path
 import glob
 import astropy.units as u
 
-def save_kep3d(X, Y, Xs, Ys, Zs, Xv, Yv, Zv, shellnums = np.asarray([], dtype=int), overwrite = False, filepath = './data/', filename = 'data.csv', pre_steps = 0, post_steps = 0):
+def save_kep3d(X, Y, Xs, Ys, Zs, Xv, Yv, Zv, shellnums = np.asarray([], dtype=int), thetaarr = np.asarray([], dtype=int), phiarr = np.asarray([], dtype=int), overwrite = False, filepath = './data/', filename = 'data.csv', pre_steps = 0, post_steps = 0):
 	'''saves the outputs of kep3d into a basic csv with one line header, added by Catherine Oct 12, 2022
 	
 	Args:
@@ -33,8 +33,8 @@ def save_kep3d(X, Y, Xs, Ys, Zs, Xv, Yv, Zv, shellnums = np.asarray([], dtype=in
 		data = np.transpose([X.to(u.au).value, Y.to(u.au).value, Xs.to(u.au).value, Ys.to(u.au).value, Zs.to(u.au).value, Xv.to(u.km/u.s).value, Yv.to(u.km/u.s).value, Zv.to(u.km/u.s).value])
 		header = 'X,Y,Xs,Ys,Zs,Xv,Yv,Zv'
 	else:
-		data = np.transpose([X.to(u.au).value, Y.to(u.au).value, Xs.to(u.au).value, Ys.to(u.au).value, Zs.to(u.au).value, Xv.to(u.km/u.s).value, Yv.to(u.km/u.s).value, Zv.to(u.km/u.s).value, shellnums.value])
-		header = 'X,Y,Xs,Ys,Zs,Xv,Yv,Zv,shellnum'
+		data = np.transpose([X.to(u.au).value, Y.to(u.au).value, Xs.to(u.au).value, Ys.to(u.au).value, Zs.to(u.au).value, Xv.to(u.km/u.s).value, Yv.to(u.km/u.s).value, Zv.to(u.km/u.s).value, shellnums.value, thetaarr.value, phiarr.value])
+		header = 'X,Y,Xs,Ys,Zs,Xv,Yv,Zv,shellnum,theta,phi'
 	
 	if overwrite:
 		if pre_steps > 0:

@@ -102,7 +102,7 @@ def simulate_spherical(n_shells = 3, kick_vel:u.m/u.s = 1.*u.km/u.s, P_i:u.year 
 		t_prog = np.linspace(prog_start, t_start, prog_steps)
 		
 		_, _, Xs, Ys, Zs, _, _, _ = kep3d(t_prog, P_i, tperi_i, a_i, e_i, inc_i, omega_i, anode_i)
-		save_kep3d_short(Xs, Ys, Zs, filename = 'progenitor.csv', overwrite=overwrite, post_steps = num_steps, filepath = save_dir)
+		save_kep3d_short(Xs, Ys, Zs, filename = 'progenitor.csv', overwrite=overwrite, post_steps = n_steps, filepath = save_dir)
 	
 	## Calculate shell velocities:
 	if isinstance(kick_vel.value,np.ndarray): #if vel is passed in as an array
@@ -158,7 +158,7 @@ def simulate_spherical(n_shells = 3, kick_vel:u.m/u.s = 1.*u.km/u.s, P_i:u.year 
 
 
 def simulate_spherical_velinput(n_shells = 3, kick_vel:u.m/u.s = 1.*u.km/u.s, v_i:u.km/u.s = 6.*u.km/u.s, 
-		tperi_i:u.year = 2000 * u.year, e_i = 0., omega_i:u.rad = 0*u.rad, anode_i:u.rad = 0*u.rad, 
+		t_firstpass:u.year = 750 * u.day, e_i = 0., omega_i:u.rad = 0*u.rad, anode_i:u.rad = 0*u.rad, 
 		M:u.kg = 1.0*u.Msun, m:u.kg = 1.0*u.Mearth, num_per_shell = 400, t_start:u.year = 2000*u.year, 
 		delta_t:u.year = 50*u.year, n_steps = 500, show_pre = False, save_dir = './data/', 
 		overwrite = False):
@@ -189,6 +189,149 @@ def simulate_spherical_velinput(n_shells = 3, kick_vel:u.m/u.s = 1.*u.km/u.s, v_
 			overwrite:   if it's ok for the program to overwrite the current directory at save_dir
 			
 	'''
+	
+	tperi_i = t_start + (kick_vel*0.8/(u.km/u.s))*t_firstpass
+	
+	#calculate step rate (steps/year)
+	step_rate = n_steps/delta_t
+	
+	#initial i is 0:
+	inc_i = 0 *u.rad
+	
+	# given the masses and orbital velocity, we really have to calculate a
+	a_i = (c.G*(M+m)/(v_i**2)).to(u.au)
+	
+	#calculate Period
+	P_i=np.sqrt((a_i**3)*4*np.pi*np.pi/(c.G*(M+m))).to(u.yr)
+	print('Initial Period: '+str(P_i))
+	
+	#create array of shell numbers:
+	shellnums = np.zeros(n_shells*num_per_shell)
+	for num in range(n_shells):
+		shellnums[num*num_per_shell:(num+1)*num_per_shell] = num
+	
+	#print(shellnums)
+	
+	#prepare to save data:
+	if os.path.exists(save_dir):
+		if len(os.listdir(save_dir)) != 0: #if the directory is not empty
+			if overwrite:
+				empty_data_directory(save_dir)
+			else:
+				print('Save directory at '+save_dir+' is not empty. Select a new directory or set overwrite = True')
+				return
+	else:
+		print('Save directory does not exist, creating new directory at '+save_dir)
+		os.mkdir(save_dir)
+		
+	#save input params to file:
+# 	paramfile = save_dir+'params.csv'
+# 	paramdata = np.asarray([n_shells, kick_vel, v_i, t_firstpass, e_i, omega_i, anode_i, M, m, num_per_shell, t_start, delta_t, n_steps])
+# 	paramheader = 'n_shells,kick_vel,v_i,t_firstpass,e_i,omega_i,anode_i,M,m,num_per_shell,t_start,delta_t,n_steps'
+# 	
+# 	np.savetxt(paramfile, paramdata, delimiter=',', header = paramheader)
+		
+	###PROGENITOR:
+	#create single orbit:
+	t_pro_orbit = np.linspace(t_start,t_start+P_i,(step_rate*P_i).astype(int))
+	_, _, Xa, Ya, Za, _, _, _ = kep3d(t_pro_orbit, P_i, tperi_i, a_i, e_i, inc_i, omega_i, anode_i)
+	
+	save_kep3d_short(Xa, Ya, Za, filename = 'orbit.csv', overwrite=overwrite, filepath = save_dir)
+	
+	#to visualize progenitor:
+	prog_steps = 0
+	if isinstance(show_pre, bool):
+		if show_pre:
+			prog_steps = int(step_rate*30*u.year)
+			prog_start = t_start-30*u.year
+			t_prog = np.linspace(prog_start, t_start, prog_steps)
+			
+			_, _, Xs, Ys, Zs, _, _, _ = kep3d(t_prog, P_i, tperi_i, a_i, e_i, inc_i, omega_i, anode_i)
+			save_kep3d_short(Xs, Ys, Zs, filename = 'progenitor.csv', overwrite=overwrite, post_steps = n_steps, filepath = save_dir)
+			
+	else:
+		try:
+			show_pre.to(u.year)
+		except:
+			print('show_pre must be a boolean or quantity with units of time')
+			return
+		
+		prog_steps = int(step_rate*show_pre)
+		prog_start = t_start-show_pre
+		t_prog = np.linspace(prog_start, t_start, prog_steps)
+		
+		_, _, Xs, Ys, Zs, _, _, _ = kep3d(t_prog, P_i, tperi_i, a_i, e_i, inc_i, omega_i, anode_i)
+		save_kep3d_short(Xs, Ys, Zs, filename = 'progenitor.csv', overwrite=overwrite, post_steps = n_steps, filepath = save_dir)
+	
+	## Calculate shell velocities:
+	if isinstance(kick_vel.value,np.ndarray): #if vel is passed in as an array
+		if kick_vel.size != n_shells:
+			print('error, kick_vel must be array of same size as rel_mass OR float')
+			return
+		else:
+			vel_arr = kick_vel.copy()
+	else:
+		vel_arr = np.linspace(0, kick_vel, n_shells+1)[1:]
+		
+	##Assuming each particle is equal mass, calc number of particles per shell:
+	#normalize massses
+# 	norm_mass = rel_mass/(rel_mass.sum())
+# 	num_per_shell = (norm_mass*n_particles).astype(int)
+	
+#	num_per_shell = (n_particles/n_shells)
+		
+	##Create shells:
+	r, theta, phi = fibonacci_sphere(n_shells, num_per_shell, vel_arr)	
+	
+	#print(phi)
+	#calculate f_i# calculate mean anomaly for t_explode
+	M_explode = u.rad * 2*np.pi*(t_start-tperi_i)/P_i
+	# calculate the true anomaly for this mean anomaly
+	(E_explode, f_i) = kepler_solve(e_i, M_explode)
+	
+	#calculate new orbital elements
+	P_prime, f_prime, a_prime, e_prime, inc_prime, omega_prime, anode_prime = kick_kep_elements(r, theta, phi, P_i, f_i, a_i, e_i, omega_i, anode_i, M, m)
+	
+	#calculate orbits, save data:
+	t_post = np.linspace(t_start, t_start+delta_t, n_steps)
+	
+	# now we want to get the periastron times for all the exploded particle orbits...
+	# calculate eccentric anomaly from true anomaly
+	E_prime = np.arctan2(np.sqrt(1 - e_prime**2) * np.sin(f_prime), e_prime + np.cos(f_prime))
+	
+	# calculate the mean anomaly fom the eccentric anomaly
+	M_prime = E_prime - e_prime*np.sin(E_prime)*u.rad
+	
+	tperi_prime = t_start - P_prime*M_prime/(2*np.pi*u.rad)
+	
+	for idx in tqdm(range(P_prime.size)):
+		shellnum = shellnums[idx]
+		currtheta = theta[idx]
+		currphi = phi[idx]
+		X, Y, Xs, Ys, Zs, Xv, Yv, Zv = kep3d(t_post,P_prime[idx],tperi_prime[idx],a_prime[idx],e_prime[idx],inc_prime[idx],omega_prime[idx],anode_prime[idx])
+		
+		shellarr = np.ones_like(Xs)*shellnum
+		thetaarr = np.ones_like(Xs)*currtheta
+		phiarr = np.ones_like(Xs)*currphi
+		
+		filename = 'cloud'+str(idx)+'.csv'
+		save_kep3d(X, Y, Xs, Ys, Zs, Xv, Yv, Zv, shellarr, thetaarr, phiarr, filename = filename, overwrite=True, pre_steps = prog_steps, filepath = save_dir)
+ 		
+ 		
+	return step_rate
+
+
+def simulate_spherical_postprune(n_shells = 3, kick_vel:u.m/u.s = 1.*u.km/u.s, v_i:u.km/u.s = 6.*u.km/u.s, 
+		t_firstpass:u.year = 750 * u.day, e_i = 0., omega_i:u.rad = 0*u.rad, anode_i:u.rad = 0*u.rad, 
+		M:u.kg = 1.0*u.Msun, m:u.kg = 1.0*u.Mearth, num_per_shell = 400, t_start:u.year = 2000*u.year, 
+		delta_t:u.year = 50*u.year, n_steps = 500, show_pre = False, save_dir = './data/', 
+		overwrite = False):
+		
+	'''
+			
+	'''
+	
+	tperi_i = t_start + (kick_vel*0.8/(u.km/u.s))*t_firstpass
 	
 	#calculate step rate (steps/year)
 	step_rate = n_steps/delta_t
@@ -224,35 +367,35 @@ def simulate_spherical_velinput(n_shells = 3, kick_vel:u.m/u.s = 1.*u.km/u.s, v_
 		
 	###PROGENITOR:
 	#create single orbit:
-	t_pro_orbit = np.linspace(t_start,t_start+P_i,(step_rate*P_i).astype(int))
-	_, _, Xa, Ya, Za, _, _, _ = kep3d(t_pro_orbit, P_i, tperi_i, a_i, e_i, inc_i, omega_i, anode_i)
-	
-	save_kep3d_short(Xa, Ya, Za, filename = 'orbit.csv', overwrite=overwrite, filepath = save_dir)
-	
-	#to visualize progenitor:
-	prog_steps = 0
-	if isinstance(show_pre, bool):
-		if show_pre:
-			prog_steps = int(step_rate*30*u.year)
-			prog_start = t_start-30*u.year
-			t_prog = np.linspace(prog_start, t_start, prog_steps)
-			
-			_, _, Xs, Ys, Zs, _, _, _ = kep3d(t_prog, P_i, tperi_i, a_i, e_i, inc_i, omega_i, anode_i)
-			save_kep3d_short(Xs, Ys, Zs, filename = 'progenitor.csv', overwrite=overwrite, post_steps = n_steps, filepath = save_dir)
-			
-	else:
-		try:
-			show_pre.to(u.year)
-		except:
-			print('show_pre must be a boolean or quantity with units of time')
-			return
-		
-		prog_steps = step_rate*show_pre
-		prog_start = t_start+show_pre
-		t_prog = np.linspace(prog_start, t_start, prog_steps)
-		
-		_, _, Xs, Ys, Zs, _, _, _ = kep3d(t_prog, P_i, tperi_i, a_i, e_i, inc_i, omega_i, anode_i)
-		save_kep3d_short(Xs, Ys, Zs, filename = 'progenitor.csv', overwrite=overwrite, post_steps = num_steps, filepath = save_dir)
+# 	t_pro_orbit = np.linspace(t_start,t_start+P_i,(step_rate*P_i).astype(int))
+# 	_, _, Xa, Ya, Za, _, _, _ = kep3d(t_pro_orbit, P_i, tperi_i, a_i, e_i, inc_i, omega_i, anode_i)
+# 	
+# 	save_kep3d_short(Xa, Ya, Za, filename = 'orbit.csv', overwrite=overwrite, filepath = save_dir)
+# 	
+# 	#to visualize progenitor:
+# 	prog_steps = 0
+# 	if isinstance(show_pre, bool):
+# 		if show_pre:
+# 			prog_steps = int(step_rate*30*u.year)
+# 			prog_start = t_start-30*u.year
+# 			t_prog = np.linspace(prog_start, t_start, prog_steps)
+# 			
+# 			_, _, Xs, Ys, Zs, _, _, _ = kep3d(t_prog, P_i, tperi_i, a_i, e_i, inc_i, omega_i, anode_i)
+# 			save_kep3d_short(Xs, Ys, Zs, filename = 'progenitor.csv', overwrite=overwrite, post_steps = n_steps, filepath = save_dir)
+# 			
+# 	else:
+# 		try:
+# 			show_pre.to(u.year)
+# 		except:
+# 			print('show_pre must be a boolean or quantity with units of time')
+# 			return
+# 		
+# 		prog_steps = int(step_rate*show_pre)
+# 		prog_start = t_start-show_pre
+# 		t_prog = np.linspace(prog_start, t_start, prog_steps)
+# 		
+# 		_, _, Xs, Ys, Zs, _, _, _ = kep3d(t_prog, P_i, tperi_i, a_i, e_i, inc_i, omega_i, anode_i)
+# 		save_kep3d_short(Xs, Ys, Zs, filename = 'progenitor.csv', overwrite=overwrite, post_steps = n_steps, filepath = save_dir)
 	
 	## Calculate shell velocities:
 	if isinstance(kick_vel.value,np.ndarray): #if vel is passed in as an array
@@ -264,16 +407,13 @@ def simulate_spherical_velinput(n_shells = 3, kick_vel:u.m/u.s = 1.*u.km/u.s, v_
 	else:
 		vel_arr = np.linspace(0, kick_vel, n_shells+1)[1:]
 		
-	##Assuming each particle is equal mass, calc number of particles per shell:
-	#normalize massses
-# 	norm_mass = rel_mass/(rel_mass.sum())
-# 	num_per_shell = (norm_mass*n_particles).astype(int)
+	##Read in existing theta, phi:
 	
-#	num_per_shell = (n_particles/n_shells)
-		
-	##Create shells:
-	r, theta, phi = fibonacci_sphere(n_shells, num_per_shell, vel_arr)	
 	
+	
+	#r, theta, phi = fibonacci_sphere(n_shells, num_per_shell, vel_arr)
+	
+	#print(phi)
 	#calculate f_i# calculate mean anomaly for t_explode
 	M_explode = u.rad * 2*np.pi*(t_start-tperi_i)/P_i
 	# calculate the true anomaly for this mean anomaly
@@ -296,15 +436,19 @@ def simulate_spherical_velinput(n_shells = 3, kick_vel:u.m/u.s = 1.*u.km/u.s, v_
 	
 	for idx in tqdm(range(P_prime.size)):
 		shellnum = shellnums[idx]
+		currtheta = theta[idx]
+		currphi = phi[idx]
 		X, Y, Xs, Ys, Zs, Xv, Yv, Zv = kep3d(t_post,P_prime[idx],tperi_prime[idx],a_prime[idx],e_prime[idx],inc_prime[idx],omega_prime[idx],anode_prime[idx])
 		
 		shellarr = np.ones_like(Xs)*shellnum
+		thetaarr = np.ones_like(Xs)*currtheta
+		phiarr = np.ones_like(Xs)*currphi
 		
 		filename = 'cloud'+str(idx)+'.csv'
-		save_kep3d(X, Y, Xs, Ys, Zs, Xv, Yv, Zv, shellarr, filename = filename, overwrite=True, pre_steps = prog_steps, filepath = save_dir)
+		save_kep3d(X, Y, Xs, Ys, Zs, Xv, Yv, Zv, shellarr, thetaarr, phiarr, filename = filename, overwrite=True, pre_steps = prog_steps, filepath = save_dir)
  		
  		
-	return 
+	return step_rate
 
 
 	

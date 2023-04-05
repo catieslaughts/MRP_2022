@@ -15,4 +15,5 @@ __pycache__
 
 #added by me
 ./code/data
+./code/50000_data
 ./code/test_subset
