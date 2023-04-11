@@ -17,4 +17,6 @@ __pycache__
 **/code/data**
 **/code/50000_data**
 **/code/test_subset**
+**/code/extended_data**
 **.csv
+**.npz

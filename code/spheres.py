@@ -125,8 +125,8 @@ def draw_spherical(r,theta,phi,colors = [], plt_labels = [], save = False):
 	'''makes a 3d plot of the points stored in r,theta,phi
 	for our purposes, r really dictates velocity, not radius, but we plot it here as radius for viewing convenience'''
 	
-	d3 = False
-	d2 = True 
+	d3 = True
+	d2 = False 
 	
 	pointsize = 15
 	
