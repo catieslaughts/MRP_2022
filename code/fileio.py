@@ -53,6 +53,13 @@ def empty_data_directory(directory):
 	fileList = glob.glob(directory+'*')
 	for filePath in fileList:
 		os.remove(filePath)
+
+#BE VERY CAREFUL CALLING THIS FUNCTION, FOR GOD'S SAKE
+def empty_extra_data(directory):
+	fileList = glob.glob(directory+'cloud_extra*')
+	print(str(len(fileList))+' files removed from '+directory)
+	for filePath in fileList:
+		os.remove(filePath)
 		
 @u.quantity_input
 def write_param_file(kick_vel:u.m/u.s = 1.*u.km/u.s, v_i:u.km/u.s = 6.*u.km/u.s, 

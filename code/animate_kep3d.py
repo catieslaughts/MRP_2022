@@ -131,26 +131,25 @@ def animate_los_subset(foi_list = 'foi.csv',directory = './data/', save = False,
 	vel = []
 	shell_arr = []
 	
-	files = np.loadtxt('foi.csv', dtype = 'str', delimiter=',')
+	files = np.loadtxt(foi_list, dtype = 'str', delimiter=',')
 	if files.size == 1:
 		files = np.asarray([files])
 	
 	#files.reverse()
+	failcount = 0
 	for filename in tqdm(files):
 		if not filename.startswith('.'):
 			try:	
 				Xs_temp, Ys_temp, Zs_temp, shellnum, *_ = read_kep3d_npz(directory, filename)
+				Ys.append(Ys_temp[n_pre_steps:])
+				Zs.append(Zs_temp[n_pre_steps:])
+				#if you want to change this code to show the progenitor later you'll need to get rid of the slicing on the above lines
+				shell_arr.append(shellnum)
 			except:
 				print(filename)
+				failcount += 1
 			
-			
-			
-			Ys.append(Ys_temp[n_pre_steps:])
-			Zs.append(Zs_temp[n_pre_steps:])
-			#if you want to change this code to show the progenitor later you'll need to get rid of the slicing on the above lines
-			
-			shell_arr.append(shellnum)
-				
+	#print(failcount)
 	
 	Ys = np.asarray(Ys)#convert regular lists to np arrays
 	Zs = np.asarray(Zs) 
@@ -211,7 +210,7 @@ def animate_los_subset(foi_list = 'foi.csv',directory = './data/', save = False,
 		#print(returns)
 		return returns
 	
-	ani = animation.FuncAnimation(fig, animate, frames = np.arange(1, Ys.shape[1]),interval = 10, blit=True, repeat = True)
+	ani = animation.FuncAnimation(fig, animate, frames = np.arange(1, Ys.shape[1]),interval = 1, blit=True, repeat = True)
 	plt.show()
 	
 	if save:
@@ -441,21 +440,21 @@ def animate_3d_subset(foi_list = 'foi.csv', directory = './data/', save = False,
 	if save:
 		ani.save(save_file)
 
-def staticdistribution(foi_list = 'foi.csv', save = False):
+def staticdistribution(directory = './data/', from_list = True, foi_list = 'foi.csv', save = False, savefile = 'sphere_distrib_3d.png'):
 #TODO: Change to work with .npz
 	
-	files = np.loadtxt('foi.csv', dtype='str', delimiter = ',')
+	if from_list:
+		files = np.loadtxt('foi.csv', dtype='str', delimiter = ',')
+	else:
+		files = np.asarray(os.listdir(directory))
 	
-	thetas_flat = np.zeros(files.size)
-	phis_flat = np.zeros(files.size)
+	thetas_flat = np.zeros(files.size) *u.rad
+	phis_flat = np.zeros(files.size) *u.rad
 	shellnums_flat = np.zeros(files.size)
 
 	for idx in tqdm(range(files.size)):
-		currdata = np.loadtxt('./data/'+files[idx], delimiter = ',')
-		
-		shellnums_flat[idx] = currdata[0, -3]
-		thetas_flat[idx] = currdata[0, -2]
-		phis_flat[idx] = currdata[0, -1]
+		file = files[idx]
+		_, *_, shellnums_flat[idx], thetas_flat[idx], phis_flat[idx] = read_kep3d_npz(filepath = directory, filename = file)
 	
 	num_shells = np.unique(shellnums_flat).size
 # 	print(num_shells)
@@ -478,7 +477,7 @@ def staticdistribution(foi_list = 'foi.csv', save = False):
 	
 	#print(np.unique(shellnums))
 	
-	draw_spherical(shellnums+1, thetas, phis, colors = ['orange', 'green', 'red', 'purple', 'blue'], plt_labels = np.unique(shellnums), save = save)
+	draw_spherical(shellnums+1, thetas, phis, colors = ['orange', 'green', 'red', 'purple', 'blue'], plt_labels = np.unique(shellnums), save = save, savefile = savefile)
 
 #depreciated
 

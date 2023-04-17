@@ -3,9 +3,10 @@ import matplotlib.pyplot as plt
 import astropy.units as u
 import os
 from fileio import *
+from tqdm import tqdm
 
 @u.quantity_input
-def save_lightcurve_data(directory = './data/', paramfile = 'params.csv', cut_run = False):
+def save_lightcurve_data(directory = './data/', paramfile = 'params.csv', cut_run = False, foi_file = 'foi.csv', lc_file = 'lc_data'):
 	
 	save_foi = True
 	save_countarr = True
@@ -18,7 +19,7 @@ def save_lightcurve_data(directory = './data/', paramfile = 'params.csv', cut_ru
 	shellnums = np.arange(num_shells)
 	
 	#get file names:
-	files = os.listdir(directory)
+	files = np.asarray(os.listdir(directory))
 	
 	#remove orbit and progenitor from list
 	if 'orbit.npz' in files:
@@ -32,7 +33,9 @@ def save_lightcurve_data(directory = './data/', paramfile = 'params.csv', cut_ru
 	if save_foi:
 		files_of_interest = []
 	
-	for idx, file in enumerate(files):
+	print('Creating lightcurves...')
+	for idx in tqdm(range(files.size)):
+		file = files[idx]
 		X, Y, Z, shell_num, *_ = read_kep3d_npz(directory, file)
 		
 		radii = np.sqrt(Y*Y + Z*Z)
@@ -51,21 +54,21 @@ def save_lightcurve_data(directory = './data/', paramfile = 'params.csv', cut_ru
 			
 	if save_foi:
 		foi = np.asarray(files_of_interest)
-		np.savetxt('foi.csv', foi, delimiter=',', fmt='%s')
+		np.savetxt(foi_file, foi, delimiter=',', fmt='%s')
 		print('foi saved')
 	
 	lcs = np.count_nonzero(crossing_array[:,:,:], 1)
 	
 	if save_countarr:
-		np.savez('lc_data', lcs = lcs)
+		np.savez(lc_file, lcs = lcs)
 		print('sub lightcurves saved')
 
 @u.quantity_input
-def plot_from_saved(readfile = 'lc_data.csv', shell_weights = np.nan, steprate:1/u.year = np.nan/u.year, plt_subs = True, plt_total = True, save_plt = False, savefile = './lightcurve.pdf'):
+def plot_from_saved(readfile = 'lc_data.npz', shell_weights = np.nan, steprate:1/u.year = np.nan/u.year, plt_subs = True, plt_total = True, save_plt = False, savefile = './lightcurve.pdf'):
 	
 	##Read in from file:
 	
-	sub_lcs = np.load('lc_data.npz')['lcs']
+	sub_lcs = np.load(readfile)['lcs']
 	
 	if np.isnan(shell_weights):
 		shell_weights = np.ones(sub_lcs.shape[1])
@@ -89,7 +92,10 @@ def plot_from_saved(readfile = 'lc_data.csv', shell_weights = np.nan, steprate:1
 	
 	#print(total_lc)
 	if plt_subs:
-		plt.plot(xaxis, -sub_lcs, label=shellnums)
+		labels = np.ones(shellnums.size, dtype = str)
+		for idx, label in enumerate(labels):
+			label = 'shell: '+str(shellnums[idx])+' weight: '+str(shell_weights[idx])
+		plt.plot(xaxis, -sub_lcs, label=labels)
 	
 	plt.legend()
 	

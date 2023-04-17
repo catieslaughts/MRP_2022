@@ -190,6 +190,13 @@ def simulate_spherical(n_shells = 3, kick_vel:u.m/u.s = 1.*u.km/u.s, v_i:u.km/u.
  	
 	return step_rate
 
+def get_steprate(paramfile = 'params.csv'):
+	_,_,_,_,delta_t,_,_,_,_,_,_,n_steps,_,_,_ = read_param_file(paramfile)
+	
+	step_rate = n_steps/delta_t
+	
+	return step_rate
+	
 #use this one to actually run stuff
 @u.quantity_input
 def simulate_spherical_docinput(paramfile = 'params.csv', save_dir = './data/', overwrite = False):
@@ -278,6 +285,7 @@ def simulate_spherical_docinput(paramfile = 'params.csv', save_dir = './data/', 
 	
 	files = np.zeros(P_prime.size, dtype = str)
 	
+	print('Simulating...')
 	for idx in tqdm(range(P_prime.size)):
 		shellnum = shellnums[idx]
 		currtheta = theta[idx]
@@ -291,7 +299,7 @@ def simulate_spherical_docinput(paramfile = 'params.csv', save_dir = './data/', 
  		
 	return step_rate
 
-def simulate_postprune(paramfile = 'params.csv', foi = '', extended_set = '', read_dir = './data/', save_dir = './extended_data/', overwrite = False):
+def simulate_postprune(paramfile = 'params.csv', foi_file = 'foi.csv', read_dir = './data/', save_dir = './data_extended/', overwrite = False):
 		
 	'''
 			
@@ -328,7 +336,8 @@ def simulate_postprune(paramfile = 'params.csv', foi = '', extended_set = '', re
 	if os.path.exists(save_dir):
 		if len(os.listdir(save_dir)) != 0: #if the directory is not empty
 			if overwrite:
-				empty_data_directory(save_dir)
+				os.system('rm -rf '+save_dir)
+				os.mkdir(save_dir)
 			else:
 				print('Save directory at '+save_dir+' is not empty. Select a new directory or set overwrite = True')
 				return
@@ -353,7 +362,7 @@ def simulate_postprune(paramfile = 'params.csv', foi = '', extended_set = '', re
 	new_theta, new_phi = get_giant_sphere()
 	
 	#foi particles
-	files = np.loadtxt('foi.csv', dtype = 'str', delimiter=',')
+	files = np.loadtxt(foi_file, dtype = 'str', delimiter=',')
 	if files.size == 1:
 		files = np.asarray([files])
 	
@@ -364,6 +373,7 @@ def simulate_postprune(paramfile = 'params.csv', foi = '', extended_set = '', re
 	print('Reading in og data...')
 	for idx in tqdm(range(files.size)):
 		filename = files[idx]
+		os.system('cp '+read_dir+filename+' '+save_dir) 
 		if not filename.startswith('.'):
 			try:	
 				_, *_, og_shellnum[idx], og_theta[idx], og_phi[idx] = read_kep3d_npz(read_dir, filename)
@@ -372,8 +382,14 @@ def simulate_postprune(paramfile = 'params.csv', foi = '', extended_set = '', re
 	
 	#Calc radius:
 	ang_rad = np.sqrt(4*np.pi / num_per_shell) *u.rad#4pi steradians per sphere, divided by the number of particles per shell
-	search_rad = haversin(ang_rad) #ASK MATTHEW ABOUT THIS
-	#print(ang_rad)
+	search_rad = haversin(ang_rad) #ASK MATT ABOUT THIS
+	
+	print(search_rad)
+	
+	theta = np.array([])*u.rad
+	phi = np.array([])*u.rad
+	shellnums = np.array([], dtype = int)
+	vels = np.array([])*u.km/u.s
 	
 	#find nearby:
 	print('Finding nearby particles..')
@@ -381,10 +397,6 @@ def simulate_postprune(paramfile = 'params.csv', foi = '', extended_set = '', re
 	for curr_shell in np.unique(og_shellnum):
 	
 		select_arr = np.zeros(new_theta.size, dtype=int)
-		theta = np.array([])*u.rad
-		phi = np.array([])*u.rad
-		shellnums = np.array([], dtype = int)
-		vels = np.array([])*u.km/u.s
 		
 		rel_theta = og_theta[og_shellnum == curr_shell] #relevant list of thetas
 		rel_phi = og_phi[og_shellnum == curr_shell]
@@ -402,6 +414,7 @@ def simulate_postprune(paramfile = 'params.csv', foi = '', extended_set = '', re
 			p_bar.refresh()
 		
 		select_arr = select_arr.astype(np.bool)
+		#print(np.count_nonzero(select_arr))
 		
 		shellnums_toadd = np.ones(new_theta[select_arr].size, dtype = int)*curr_shell
 		vels_toadd = vel_arr[shellnums_toadd]
@@ -435,14 +448,14 @@ def simulate_postprune(paramfile = 'params.csv', foi = '', extended_set = '', re
 	
 	files = np.zeros(P_prime.size, dtype = str)
 	
-	print('Simulating...')
+	print('Simulating '+str(shellnums.size)+' new particles...')
 	for idx in tqdm(range(P_prime.size)):
 		shellnum = shellnums[idx]
 		currtheta = theta[idx]
 		currphi = phi[idx]
 		_,_, Xs, Ys, Zs, _,_,_ = kep3d(t_post,P_prime[idx],tperi_prime[idx],a_prime[idx],e_prime[idx],inc_prime[idx],omega_prime[idx],anode_prime[idx])
 		
-		filename = 'cloud'+str(idx)
+		filename = 'cloud_extra'+str(idx)
 		files[idx] = filename
 		save_kep3d_npz(Xs, Ys, Zs, shellnum, currtheta, currphi, filename = filename, overwrite=True, filepath = save_dir)
  		

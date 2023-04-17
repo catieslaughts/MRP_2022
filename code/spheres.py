@@ -121,7 +121,7 @@ def sph2cart(r, theta, phi):
 	return x, y, z
 	
 #plotting	
-def draw_spherical(r,theta,phi,colors = [], plt_labels = [], save = False):
+def draw_spherical(r,theta,phi,colors = [], plt_labels = [], save = False, savefile = 'sphere_distrib_3d.png'):
 	'''makes a 3d plot of the points stored in r,theta,phi
 	for our purposes, r really dictates velocity, not radius, but we plot it here as radius for viewing convenience'''
 	
@@ -132,8 +132,8 @@ def draw_spherical(r,theta,phi,colors = [], plt_labels = [], save = False):
 	
 	if isinstance(r, u.Quantity):
 		r = r.value
-		theta = theta.value
-		phi = phi.value
+		theta = theta.to(u.rad).value
+		phi = phi.to(u.rad).value
 	
 	x,y,z = sph2cart(r, theta, phi)
 	
@@ -156,10 +156,16 @@ def draw_spherical(r,theta,phi,colors = [], plt_labels = [], save = False):
 		
 		if not len(plt_labels) == 0:
 				plt.legend
-		#set_axes_equal(ax)
+		
+		h = 5
+		ax.set_xlim(-h,h)
+		ax.set_ylim(-h,h)
+		ax.set_zlim(h,-h)
+		
 		if save:
-			plt.savefig('sphere_distrib_3d.png')
-		plt.show()
+			plt.savefig(savefile, dpi = 300)
+		else:
+			plt.show()
 	
 	if d2:
 		labels = [['x','y'],['y','z'],['x','z']]
@@ -184,14 +190,14 @@ def draw_spherical(r,theta,phi,colors = [], plt_labels = [], save = False):
 			plt.title('Data Projection')
 			plt.xlabel(labels[lab_idx][0])
 			plt.ylabel(labels[lab_idx][1])
-			ax.set_aspect('equal')
 			
 			if not len(plt_labels) == 0:
 				plt.legend()
 			
 			if save:
 				plt.savefig('2d_distrib_'+labels[lab_idx][0]+labels[lab_idx][1]+'.png')
-			plt.show()
+			else:
+				plt.show()
 	
 	pass	
  
