@@ -19,7 +19,9 @@ def save_lightcurve_data(directory = './data/', paramfile = 'params.csv', cut_ru
 	shellnums = np.arange(num_shells)
 	
 	#get file names:
+	print('Getting file names...')
 	files = np.asarray(os.listdir(directory))
+	print('Done')
 	
 	#remove orbit and progenitor from list
 	if 'orbit.npz' in files:
@@ -62,18 +64,77 @@ def save_lightcurve_data(directory = './data/', paramfile = 'params.csv', cut_ru
 	if save_countarr:
 		np.savez(lc_file, lcs = lcs)
 		print('sub lightcurves saved')
+		
+def save_lightcurve_data_midsaves(directory = './data/', paramfile = 'params.csv', cut_run = False, foi_file = 'foi.csv', lc_file = 'lc_data'):
+	
+	save_foi = True
+	save_countarr = True
+	
+	_,*_,n_steps,n_pre_steps,num_shells,R_star = read_param_file(paramfile)
+	
+	if cut_run:
+		R_star = 3*R_star
+	
+	shellnums = np.arange(num_shells)
+	
+	#get file names:
+	print('Getting file names...')
+	files = np.asarray(os.listdir(directory))
+	print('Done')
+	
+	#remove orbit and progenitor from list
+	if 'orbit.npz' in files:
+		files.remove('orbit.npz')
+	if 'progenitor.npz' in files:
+		files.remove('progenitor.npz')
+	
+	#create array to store whether the given particle is crossing at the time in question
+	lcs = np.zeros((n_steps+n_pre_steps, num_shells))
+	
+	if save_foi:
+		files_of_interest = []
+	
+	print('Creating lightcurves...')
+	for idx in tqdm(range(files.size)):
+		file = files[idx]
+		X, Y, Z, shell_num, *_ = read_kep3d_npz(directory, file)
+		
+		radii = np.sqrt(Y*Y + Z*Z)
+		
+		#get rid of particles behind the star 
+		#(possibly redundant for our cases, but wanted to be safe)
+		radii[X<0] = 1000000000*R_star #arbitrarily large
+		
+		lcs[:,shell_num] = lcs[:,shell_num] + (radii<R_star)
+		
+		#print(radii.shape)
+		
+		if save_foi:
+			if np.count_nonzero(radii<R_star)>0:
+				files_of_interest.append(file)
+			
+	if save_foi:
+		foi = np.asarray(files_of_interest)
+		np.savetxt(foi_file, foi, delimiter=',', fmt='%s')
+		print('foi saved')
+	
+	#lcs = np.count_nonzero(crossing_array[:,:,:], 1)
+	
+	if save_countarr:
+		np.savez(lc_file, lcs = lcs)
+		print('sub lightcurves saved')
 
 @u.quantity_input
-def plot_from_saved(readfile = 'lc_data.npz', shell_weights = np.nan, steprate:1/u.year = np.nan/u.year, plt_subs = True, plt_total = True, save_plt = False, savefile = './lightcurve.pdf'):
+def plot_from_saved(readfile = 'lc_data.npz', shell_weights = [np.nan], steprate:1/u.year = np.nan/u.year, plt_subs = True, plt_total = True, legend = True, save_plt = False, savefile = './lightcurve.pdf'):
 	
 	##Read in from file:
 	
 	sub_lcs = np.load(readfile)['lcs']
 	
-	if np.isnan(shell_weights):
+	if np.isnan(shell_weights[0]):
 		shell_weights = np.ones(sub_lcs.shape[1])
 	else:
-		shell_weights = np.asarray(shell_weights)
+		shell_weights = np.asarray(shell_weights)/shell_weights.max()
 	shellnums = np.arange(shell_weights.size)
 	
 	if sub_lcs.shape[1] != shell_weights.size:
@@ -82,26 +143,31 @@ def plot_from_saved(readfile = 'lc_data.npz', shell_weights = np.nan, steprate:1
 	
 	total_lc = np.dot(sub_lcs,shell_weights)
 	
+	max_num = total_lc.max()
+	
 	xaxis = np.arange(total_lc.size)
 	
 	if not np.isnan(steprate):
 		xaxis = xaxis * (1/steprate).to(u.day)
 	
-	if plt_total:
-		plt.plot(xaxis, -total_lc, label = 'Total Lightcurve')
-	
 	#print(total_lc)
 	if plt_subs:
-		labels = np.ones(shellnums.size, dtype = str)
-		for idx, label in enumerate(labels):
-			label = 'shell: '+str(shellnums[idx])+' weight: '+str(shell_weights[idx])
-		plt.plot(xaxis, -sub_lcs, label=labels)
+		if legend:
+			labels = np.ones(shellnums.size, dtype = str)
+			for idx, label in enumerate(labels):
+				labels[idx] = 'shell: '+str(shellnums[idx])+' weight: '+str(shell_weights[idx])
+			plt.plot(xaxis, -(sub_lcs * shell_weights)/max_num, label=labels)
+		else:
+			plt.plot(xaxis, -(sub_lcs * shell_weights)/max_num)
+	
+	if plt_total:
+		plt.plot(xaxis, -total_lc/max_num, label = 'Total Lightcurve', linestyle = 'dashed', c = 'black')
 	
 	plt.legend()
 	
-	plt.yticks([])
-	plt.xlabel('Time Step')
-	#plt.xlim(150,350)
+# 	plt.yticks([])
+	plt.xlabel('Time (Days)')
+	plt.xlim(500,1750)
 	
 	plt.title('Light Curve')
 	

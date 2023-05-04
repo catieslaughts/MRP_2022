@@ -6,22 +6,27 @@ from fileio import *
 from huge_sphere import *
 
 
-make_huge_sphere(num_parts = 1e6)
-write_param_file(n_shells = 100, num_per_shell = 1000, v_i = 5.5*u.km/u.s, 
-		kick_vel = 1.75 * u.km/u.s, delta_t= 5*u.year, n_steps = 500)
-		
-steprate = simulate_spherical_docinput(overwrite = True)
-
-save_lightcurve_data(cut_run = True)
-# plotc_from_saved(steprate=steprate)
-
-# animate_los_subset()
-
-steprate = simulate_postprune(save_dir = './data_extended/', overwrite = True)
-
-# save_lightcurve_data(directory = './extra_data_large/', foi_file = 'foi_extra.csv', lc_file = 'lc_data_extra_large')
+# make_huge_sphere(num_parts = 1e6)
+# write_param_file(n_shells = 100, num_per_shell = 1000, v_i = 5.5*u.km/u.s, 
+# 		kick_vel = 1.75 * u.km/u.s, delta_t= 5*u.year, n_steps = 500)
+# 		
+# steprate = simulate_spherical_docinput(overwrite = True)
+# 
+# save_lightcurve_data_midsaves(cut_run = True)
 # steprate = get_steprate()
-# plot_from_saved(readfile = 'lc_data_extra.npz', steprate=steprate)
+# plot_from_saved(steprate=steprate, legend=False)
+# 
+# # animate_los_subset()
+# 
+# steprate = simulate_postprune(save_dir = './data_extended/', overwrite = True)
+
+# save_lightcurve_data_midsaves(directory = './data_extended/', foi_file = 'foi_extended.csv', lc_file = 'lc_data_extended')
+steprate = get_steprate()
+plot_from_saved(readfile = 'lc_data_extended.npz', steprate=steprate, legend=False)
+
+shell_weights = np.linspace(0,1,100)
+
+plot_from_saved(readfile = 'lc_data_extended.npz', shell_weights = shell_weights, plt_subs = True, steprate=steprate, legend=False)
 
 # animate_los_subset(directory = './extra_data/', foi_list = 'foi_extra.csv')
 

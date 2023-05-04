@@ -19,5 +19,5 @@ __pycache__
 **/code/test_subset**
 **/code/extended_data**
 **/code/extra_data**
+**/code/data_extended**
 **.csv
-**.npz
