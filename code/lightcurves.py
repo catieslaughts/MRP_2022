@@ -125,11 +125,13 @@ def save_lightcurve_data_midsaves(directory = './data/', paramfile = 'params.csv
 		print('sub lightcurves saved')
 
 @u.quantity_input
-def plot_from_saved(readfile = 'lc_data.npz', shell_weights = [np.nan], steprate:1/u.year = np.nan/u.year, plt_subs = True, plt_total = True, legend = True, save_plt = False, savefile = './lightcurve.pdf'):
+def plot_from_saved(readfile = 'lc_data.npz', shell_weights = [np.nan], steprate:u.year = np.nan * u.year, plt_subs = True, plt_total = True, legend = True, save_plt = False, savefile = './lightcurve.pdf'):
 	
 	##Read in from file:
 	
-	sub_lcs = np.load(readfile)['lcs']
+	data = np.load(readfile)
+	sub_lcs = data['lcs']
+	data.close()
 	
 	if np.isnan(shell_weights[0]):
 		shell_weights = np.ones(sub_lcs.shape[1])
@@ -141,14 +143,14 @@ def plot_from_saved(readfile = 'lc_data.npz', shell_weights = [np.nan], steprate
 		print('Error: the length of the shell weight array should be the same as the number of shells')
 		return
 	
-	total_lc = np.dot(sub_lcs,shell_weights)
+	total_lc = sub_lcs @ shell_weights
 	
 	max_num = total_lc.max()
 	
 	xaxis = np.arange(total_lc.size)
 	
 	if not np.isnan(steprate):
-		xaxis = xaxis * (1/steprate).to(u.day)
+		xaxis = xaxis * (steprate).to(u.day)
 	
 	#print(total_lc)
 	if plt_subs:

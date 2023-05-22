@@ -193,7 +193,7 @@ def simulate_spherical(n_shells = 3, kick_vel:u.m/u.s = 1.*u.km/u.s, v_i:u.km/u.
 def get_steprate(paramfile = 'params.csv'):
 	_,_,_,_,delta_t,_,_,_,_,_,_,n_steps,_,_,_ = read_param_file(paramfile)
 	
-	step_rate = n_steps/delta_t
+	step_rate = delta_t/n_steps
 	
 	return step_rate
 	
@@ -382,7 +382,7 @@ def simulate_postprune(paramfile = 'params.csv', foi_file = 'foi.csv', read_dir 
 	
 	#Calc radius:
 	ang_rad = np.sqrt(4*np.pi / num_per_shell) *u.rad#4pi steradians per sphere, divided by the number of particles per shell
-	search_rad = haversin(ang_rad) #ASK MATT ABOUT THIS
+	search_rad = haversin(ang_rad)
 	
 	print(search_rad)
 	

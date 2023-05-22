@@ -46,6 +46,8 @@ def read_kep3d_npz(filepath = './data/', filename = 'data'):
 	theta = theta *u.rad
 	phi = phi *u.rad
 	
+	npzfile.close()
+	
 	return Xs, Ys, Zs, shellnum, theta, phi
 
 #BE VERY CAREFUL CALLING THIS FUNCTION, FOR GOD'S SAKE

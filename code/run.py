@@ -4,44 +4,44 @@ from lightcurves import *
 from spheres import *
 from fileio import *
 from huge_sphere import *
+from data_fitting import *
 
 
 # make_huge_sphere(num_parts = 1e6)
+## MAKE INITIAL RUN
 # write_param_file(n_shells = 100, num_per_shell = 1000, v_i = 5.5*u.km/u.s, 
 # 		kick_vel = 1.75 * u.km/u.s, delta_t= 5*u.year, n_steps = 500)
 # 		
 # steprate = simulate_spherical_docinput(overwrite = True)
-# 
+
+##FILTER OUT IRRELEVANT STARS
 # save_lightcurve_data_midsaves(cut_run = True)
 # steprate = get_steprate()
 # plot_from_saved(steprate=steprate, legend=False)
 # 
 # # animate_los_subset()
-# 
+
+##SIMULATE EXTENDED DATA
 # steprate = simulate_postprune(save_dir = './data_extended/', overwrite = True)
 
+##CREATE MODEL LIGHT CURVES
 # save_lightcurve_data_midsaves(directory = './data_extended/', foi_file = 'foi_extended.csv', lc_file = 'lc_data_extended')
-steprate = get_steprate()
-plot_from_saved(readfile = 'lc_data_extended.npz', steprate=steprate, legend=False)
-
-shell_weights = np.linspace(0,1,100)
-
-plot_from_saved(readfile = 'lc_data_extended.npz', shell_weights = shell_weights, plt_subs = True, steprate=steprate, legend=False)
-
+# steprate = get_steprate()
+# plot_from_saved(readfile = 'lc_data_extended.npz', steprate=steprate, legend=False)
+#
 # animate_los_subset(directory = './extra_data/', foi_list = 'foi_extra.csv')
 
+##FIT REAL DATA:
+trim_models(readfile = 'lc_data_extended.npz', writefile = 'trimmed_models.npz', buffer = 100)
 
-# make_huge_sphere(num_parts = 1e6)
+
+### TESTING ZONE:
+# time, flux, flux_err = read_real_data()
+# timestep = get_steprate()
 # 
-# for num in [100, 1000]:
-# 	write_param_file(n_shells = 5, num_per_shell = num, v_i = 5.5*u.km/u.s, 
-# 		kick_vel = 1.75 * u.km/u.s, delta_t= 5*u.year, n_steps = 500)
-# # 
-# # 	simulate_spherical_docinput(save_dir = './data_'+str(int(num))+'/', overwrite = True)
-# # 	save_lightcurve_data(directory = './data_'+str(int(num))+'/', foi_file = 'foi_'+str(int(num))+'.csv', cut_run = True)
-# # 	
-# # 	simulate_postprune(read_dir = './data_'+str(int(num))+'/', save_dir = './data_extended_'+str(int(num))+'/', foi_file = 'foi_'+str(int(num))+'.csv', overwrite = True)
-# 	save_lightcurve_data(directory = './data_extended_'+str(int(num))+'/', foi_file = 'foi_'+str(int(num))+'.csv', lc_file = 'lc_'+str(int(num)))
-# 	plot_from_saved(readfile = 'lc_'+str(int(num))+'.npz', save_plt = True, savefile = './lightcurve_'+str(int(num))+'.pdf')
-# # 	staticdistribution(from_list = False, directory = './data_extended_'+str(int(num))+'/' , save = True, savefile = 'allpoints_'+str(int(num))+'.png')
+# binned_flux, time_bins = bin_real_data (time, flux, timestep = timestep)
 
+# plot_lc_basic(binned_flux)
+# plot_lc_basic(flux)
+
+fit_data(modelfile = 'trimmed_models.npz', datafile = './asassn_data/21qj_fromgithub.csv', filter_name = 'g', paramfile = 'params.csv')

@@ -32,6 +32,7 @@ def get_giant_sphere(file = 'giantsphere.npz'):
 	data = np.load(file)
 	
 	theta, phi = data['theta'], data['phi']
+	data.close()
 	
 	theta = theta* u.rad
 	phi = phi* u.rad
